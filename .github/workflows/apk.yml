@@ -10,11 +10,26 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: chmod +x gradlew
+      - name: Patch build.gradle
+        run: |
+          cat >> android/build.gradle <<'EOF'
+
+          tasks.matching { it.name == 'mergeReleaseJavaResource' }.configureEach {
+            doLast {
+              def f = file("build/intermediates/merged_java_res/release/base.jar")
+              if(!f.exists()){
+                f.parentFile.mkdirs()
+                def zos = new java.util.zip.ZipOutputStream(new FileOutputStream(f))
+                zos.putNextEntry(new java.util.zip.ZipEntry("META-INF/empty"))
+                zos.closeEntry()
+                zos.close()
+              }
+            }
+          }
+          EOF
       - run: ./gradlew android:assembleRelease --stacktrace
         env:
           CI: "false"
-      - if: failure()
-        run: find android/build -path "*merged_java_res*" ; find android/build -name "base.jar"
       - name: Sign
         run: |
           keytool -genkeypair -keystore my.jks -storepass android -keypass android -alias key -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=test"
