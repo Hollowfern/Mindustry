@@ -37,12 +37,12 @@ import mindustry.world.meta.*;
 import static mindustry.Vars.*;
 
 public class LExecutor{
-    public static int maxInstructions = 1000;
+    public static int maxInstructions = 10000;
 
     public static final int
-    maxGraphicsBuffer = 256,
-    maxDisplayBuffer = 1024,
-    maxTextBuffer = 400;
+    maxGraphicsBuffer = 4096,
+    maxDisplayBuffer = 16384,
+    maxTextBuffer = 2000;
 
     public LInstruction[] instructions = {};
     /** Non-constant variables used for network sync */
