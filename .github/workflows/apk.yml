@@ -13,5 +13,19 @@ jobs:
       - run: ./gradlew android:mergeReleaseJavaResource
         env:
           CI: "false"
-      - if: always()
+      - run: ./gradlew android:assembleRelease --stacktrace
+        env:
+          CI: "false"
+      - if: failure()
         run: find android/build -name "base.jar" ; ls -la android/build/intermediates/merged_java_res/release/
+      - name: Sign
+        run: |
+          keytool -genkeypair -keystore my.jks -storepass android -keypass android -alias key -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=test"
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          APK=$(ls android/build/outputs/apk/release/*.apk | head -1)
+          $BT/zipalign -p 4 $APK aligned.apk
+          $BT/apksigner sign --ks my.jks --ks-pass pass:android --key-pass pass:android --out mindustry-signed.apk aligned.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mindustry-apk
+          path: mindustry-signed.apk
