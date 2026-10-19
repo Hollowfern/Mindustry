@@ -10,13 +10,11 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: chmod +x gradlew
-      - name: Prepare empty resource jar
-        run: |
-          mkdir -p android/build/intermediates/merged_java_res/release
-          python3 -c "import zipfile; zipfile.ZipFile('android/build/intermediates/merged_java_res/release/base.jar','w').close()"
-      - run: ./gradlew android:assembleRelease --stacktrace -x mergeReleaseJavaResource
+      - run: ./gradlew android:assembleRelease --stacktrace
         env:
           CI: "false"
+      - if: failure()
+        run: find android/build -path "*merged_java_res*" ; find android/build -name "base.jar"
       - name: Sign
         run: |
           keytool -genkeypair -keystore my.jks -storepass android -keypass android -alias key -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=test"
