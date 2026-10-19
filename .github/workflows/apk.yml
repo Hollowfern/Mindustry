@@ -21,7 +21,6 @@ jobs:
                 def f = t.project.rootProject.file("android/build/intermediates/merged_java_res/release/base.jar")
                 if (t.name == "mergeReleaseJavaResource") {
                   gradle.seen = f.exists()
-                  println "CHK merge done, exists=" + f.exists()
                 } else if (gradle.seen && !gradle.gone && !f.exists()) {
                   gradle.gone = true
                   println "CHK MISSING after " + t.path
@@ -32,8 +31,19 @@ jobs:
           EOF
       - name: Build
         shell: bash
-        run: ./gradlew -I init.gradle android:assembleRelease 2>&1 | tee build.log
+        run: ./gradlew -I init.gradle android:assembleRelease -x bundleReleaseResources 2>&1 | tee build.log
         env:
           CI: "false"
       - if: always()
-        run: grep CHK build.log || true 
+        run: grep CHK build.log || true
+      - name: Sign
+        run: |
+          keytool -genkeypair -keystore my.jks -storepass android -keypass android -alias key -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=test"
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          APK=$(ls android/build/outputs/apk/release/*.apk | head -1)
+          $BT/zipalign -p 4 $APK aligned.apk
+          $BT/apksigner sign --ks my.jks --ks-pass pass:android --key-pass pass:android --out mindustry-signed.apk aligned.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mindustry-apk
+          path: mindustry-signed.apk 
