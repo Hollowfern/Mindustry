@@ -10,7 +10,11 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: chmod +x gradlew
-      - run: ./gradlew android:assembleRelease --stacktrace -x clearCache
+      - name: Prepare empty resource jar
+        run: |
+          mkdir -p android/build/intermediates/merged_java_res/release
+          python3 -c "import zipfile; zipfile.ZipFile('android/build/intermediates/merged_java_res/release/base.jar','w').close()"
+      - run: ./gradlew android:assembleRelease --stacktrace -x mergeReleaseJavaResource
         env:
           CI: "false"
       - name: Sign
